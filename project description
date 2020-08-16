@@ -1,2 +1,0 @@
-The assignment is to create a program that takes a binary matrix and integer tuple as inputs, and outputs as follows:
-The binary matrix represents a grid where 0's are empty cells and 1's are blocked off ones. The tuple represents a pair of dimensions of an L-shaped tile, so that for example (2,3) would be an L shaped like the movement of a Chess knight and (2,1) would be simply a domino. The program must then find all possible tilings of the grid with the tile, and display up to 2 of them picked randomly. I used DFS to solve this problem.
