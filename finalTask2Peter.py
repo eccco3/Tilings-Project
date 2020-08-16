@@ -3,54 +3,94 @@ import copy
 import tkinter as tkr
 import random
 
-tilingList = [] #holds successful tilings
-stack = [] #holds the tiles of our current attempt at tiling
+"""
+    This is a school project from my scientific computing class.
+    It takes a binary matrix (list of lists) and an integer tuple as inputs, and outputs as follows: 
+    The binary matrix represents a grid where 0's are empty cells and 1's are blocked off cells. 
+    The tuple represents a pair of dimensions of an L-shaped tile, 
+        so that for example (2,3) or (3,2) would be an L shaped like the movement of a Chess knight,
+        and (2,1) or (1,2) would be a degenerate L shaped like a domino. 
+    The program must find all possible tilings of the grid with the tile,
+        and display up to 2 of them picked randomly. 
+    I used DFS to solve this problem and displayed the results in a simple GUI.
+"""
 
-def tilings(matrix,tileCount): #compute tilings, append the stack to tilinglist if the matrix is filled
+
+stack = [] #holds the tiles of our current attempt to tile the grid
+tilingList = [] #holds successful tilings (copies of the stack)
+
+
+def tilings(matrix,tileCount): 
+    """
+    Recursively computes all possible tilings of the matrix using DFS starting at the
+    topmost,leftmost empty cell.
+    
+    matrix: list of lists of binary numbers representing a grid of possibly blocked off cells.
+    tileCount: int indicating how full the global stack should be. placeTile() will shed excess tiles.
+    returns: None
+    """
     global stack
     global tilingList
 
     if matrix == None: #this happens when placeTile() cannot place a tile in some orientation at some location
         return
+    
     for i in range(0,m):
         for j in range(0,n):
             if matrix[i][j] == 0:
-                tilings(placeTile(1, copy.deepcopy(matrix),i,j,False,tileCount),tileCount+1)
-                if tileDims[0] != 1 and tileDims[1] != 1: #prevent double-counting if tile is one-dimensional
-                    tilings(placeTile(2, copy.deepcopy(matrix),i,j,False,tileCount),tileCount+1)
-                    tilings(placeTile(3, copy.deepcopy(matrix),i,j,False,tileCount),tileCount+1)
-                    tilings(placeTile(4, copy.deepcopy(matrix),i,j,False,tileCount),tileCount+1)
-                if tileDims[0]!=tileDims[1]: #prevent double-counting if tile has equal dimensions
-                    tilings(placeTile(1, copy.deepcopy(matrix),i,j,True,tileCount),tileCount+1)
-                    if tileDims[0] != 1 and tileDims[1]!=1: #prevent double-counting if tile is one-dimensional
-                        tilings(placeTile(2, copy.deepcopy(matrix),i,j,True,tileCount),tileCount+1)
-                        tilings(placeTile(3, copy.deepcopy(matrix),i,j,True,tileCount),tileCount+1)
-                        tilings(placeTile(4, copy.deepcopy(matrix),i,j,True,tileCount),tileCount+1)
+                tilings(placeTile(orientation = 1, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                  inverted = False, tileCount = tileCount), tileCount+1)
+                #prevent double-counting if tile is one-dimensional
+                if tileDims[0] != 1 and tileDims[1] != 1:
+                    tilings(placeTile(orientation = 2, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                      inverted = False, tileCount = tileCount), tileCount+1)
+                    tilings(placeTile(orientation = 3, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                      inverted = False, tileCount = tileCount), tileCount+1)
+                    tilings(placeTile(orientation = 4, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                      inverted = False, tileCount = tileCount), tileCount+1)
+                #prevent double-counting if tile has equal dimensions
+                if tileDims[0]!=tileDims[1]: 
+                    tilings(placeTile(orientation = 1, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                      inverted = True, tileCount = tileCount), tileCount+1)
+                    #prevent double-counting if tile is one-dimensional
+                    if tileDims[0] != 1 and tileDims[1]!=1: 
+                        tilings(placeTile(orientation = 2, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                          inverted = True, tileCount = tileCount), tileCount+1)
+                        tilings(placeTile(orientation = 3, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                          inverted = True, tileCount = tileCount), tileCount+1)
+                        tilings(placeTile(orientation = 4, matrix = copy.deepcopy(matrix),row = i,col = j,
+                                          inverted = True, tileCount = tileCount), tileCount+1)
                 return
+    #matrix is full so we have a successful tiling
     tilingList.append(copy.deepcopy(stack))
-    return
 
 def placeTile(orientation,matrix,row,col,inverted,tileCount):
-    """If a tile can be placed at matrix[row][col]  then this function returns the new matrix with that tile placed. 
+    """
+    If a tile can be placed at matrix[row][col] then this function adds that tile to the stack and
+    returns the new matrix with that tile placed. 
     
-    The orientations are ordered by the quadrant the L opens towards:
-    orientation 1 is L, 
-    orientation 2 is backwards L,     
-    orientation 3 is upside-down backwards L, 
-    orientation 4 is upside-down L.
-    
-    If inverted == True, then the tileDimensions are inverted to give another orientation. If it's False, they aren't.
-    
-    Returns None if it is not possible to place the tile as specified. If tilings() receives None, it will itself return."""
+    orientation: int indicating the quadrant the L opens towards:
+        orientation 1 is L, 
+        orientation 2 is backwards L,
+        orientation 3 is upside-down backwards L,
+        orientation 4 is upside-down L.
+    matrix: list of lists of bits representing the grid to be tiled
+    row: int indicating the row of the topmost point of the tile
+    col: int indicating the column of the leftmost point of the tile
+    inverted: boolean indicating whether the tile dimensions should be inverted to get another orientation.
+    tileCount: int indicating how full the global stack should be. placeTile() will shed excess tiles.
+    returns: None if it is not possible to place the tile as specified. Returns the tiled matrix otherwise.
+    """
     global stack
     dims = tileDims
+    
     if inverted:
         dims = (tileDims[1],tileDims[0])
     
     while len(stack)>tileCount: #While we have leftover tiles from earlier tiling attempts
         stack.pop()
 
-        #check if it's even possible to tile based on our position and the dimensions of the matrix
+    #check if it's even possible to tile based on our position and the dimensions of the matrix
     if dims[0]+row>m: 
         return None
     if orientation == 1 or orientation == 3 or orientation == 4:
@@ -59,8 +99,8 @@ def placeTile(orientation,matrix,row,col,inverted,tileCount):
     if orientation == 2:
         if col-(dims[1]-1)<0: 
             return None
-        
-    #check if the entries are 0 and fill them if they are
+    
+    #check if the entries are 0 and fill them if they are. Return None if any are blocked.
     if orientation == 1: #L (down-then-right)
         for i in range(row, row+dims[0]): #check and fill the column
             if matrix[i][col] == 0:
@@ -105,28 +145,17 @@ def placeTile(orientation,matrix,row,col,inverted,tileCount):
                 matrix[row][j] = 1
             else:
                 return None
-    stack.append((row,col,orientation,inverted))
+    stack.append((row,col,orientation,inverted)) #add the tile to the stack
     return matrix
 
 
-#GUI and Input
+def buttonPressed():
+    """
+    Called when the data is entered and the button within the GUI is clicked.
+    Processes the inputs and calls tilings(). Up to 2 tilings are chosen randomly and displayed.
     
-window = tkr.Tk()
-window.title("Matrix Tilizationator")
-window.geometry("1000x800")
-matrixLbl = tkr.Label(window,text="Type a binary matrix below as a python list of lists, e.g. [[0 0], [0,0], [0,0]]", font=("Comic Sans MS",14))
-matrixLbl.pack()
-matrixTxt = tkr.Entry(window,width=10)
-matrixTxt.pack()
-
-tileLbl = tkr.Label(window,text="Type a pair of tile dimensions below as a python tuple of integers, e.g. (2,2)", font=("Comic Sans MS",14))
-tileLbl.pack()
-tileTxt = tkr.Entry(window,width=10)
-tileTxt.pack()
-
-
-def inputParameters():
-    #when the button is pressed
+    returns: None
+    """
     
     try:
         userMatrix = [[int(j.replace('[','').replace(']','')) for j in row.split(',')] for row in matrixTxt.get()[1:-1].split('],[')]
@@ -140,6 +169,7 @@ def inputParameters():
     except: 
         print("Error: Please input a positive integer ordered pair in the format (a,b).")
         window.destroy()
+
     if (tileDims[0] < 1 or tileDims[1]<1):
         window.destroy()
         sys.exit("Error: Tile dimensions must be positive.")
@@ -148,7 +178,7 @@ def inputParameters():
     m = len(userMatrix)
     n = len(userMatrix[0])
     tilings(userMatrix,0)
-    
+    print(len(tilingList))
     
     #draw the bare matrix and label it
     canv1 = tkr.Canvas(window, width=50*len(userMatrix[0])+4, height=50*len(userMatrix)+4)      
@@ -172,7 +202,6 @@ def inputParameters():
       
         
 def drawMatrix(canv,userMatrix):
-    #draws the matrix
     for i in range(0,m+1):
         canv.create_line(0,50*i+4,50*len(userMatrix[0])+3,50*i+4,width=4)
     for j in range(0,n+1):
@@ -184,28 +213,58 @@ def drawMatrix(canv,userMatrix):
 
 
 def drawTiling(canv): 
-    #draws the tiling onto the matrix, removes the tiling from tilingList
     global tilingList
+    
+    #pick a random tiling and pop it from tilingList so that we don't use it twice
     tilingNumber = random.randrange(0,len(tilingList))
     tiling = copy.deepcopy(tilingList[tilingNumber])
     tilingList.pop(tilingNumber)
-    tiledCanv = canv
+    
     for tile in tiling:
         if tile[2] == 1: #orientation 1
-            tiledCanv.create_rectangle(tile[1]*50 + 10, (tile[0]+tileDims[tile[3]]-1)*50 + 10, (tile[1] + tileDims[1-tile[3]])*50 - 2 ,(tile[0]+tileDims[tile[3]])*50 - 2, fill="blue", outline="")
-            tiledCanv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, (tile[0] + tileDims[tile[3]] - 1)*50 + 10, 
+                                  (tile[1] + tileDims[1-tile[3]])*50 - 2, (tile[0] + tileDims[tile[3]])*50 - 2, 
+                                  fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, 
+                                  fill="blue", outline="")
         if tile[2] == 2: #orientation 2
-            tiledCanv.create_rectangle((tile[1] - tileDims[1-tile[3]] + 1)*50 + 10, (tile[0]+tileDims[tile[3]]-1)*50 + 10, (tile[1]+1)*50 - 2 ,(tile[0]+tileDims[tile[3]])*50 - 2, fill="blue", outline="")
-            tiledCanv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, fill="blue", outline="")
+            canv.create_rectangle((tile[1] - tileDims[1-tile[3]] + 1)*50 + 10, (tile[0]+tileDims[tile[3]]-1)*50 + 10,
+                                  (tile[1]+1)*50 - 2 ,(tile[0]+tileDims[tile[3]])*50 - 2,
+                                  fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, 
+                                  fill="blue", outline="")
         if tile[2] == 3: #orientation 3
-            tiledCanv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, (tile[1] + tileDims[1-tile[3]]) *50 - 2,(tile[0]+1)*50 - 2, fill="blue", outline="")
-            tiledCanv.create_rectangle((tile[1]+tileDims[1-tile[3]]-1)*50 + 10, tile[0]*50 + 10, (tile[1]+tileDims[1-tile[3]])*50 - 2, (tile[0]+tileDims[tile[3]])*50 - 2, fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1] + tileDims[1-tile[3]]) *50 - 2, (tile[0]+1)*50 - 2, 
+                                  fill="blue", outline="")
+            canv.create_rectangle((tile[1]+tileDims[1-tile[3]]-1)*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1]+tileDims[1-tile[3]])*50 - 2, (tile[0]+tileDims[tile[3]])*50 - 2, 
+                                  fill="blue", outline="")
         if tile[2] == 4: #orientation 4
-            tiledCanv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, (tile[1] + tileDims[1-tile[3]]) *50 - 2,(tile[0]+1)*50 - 2, fill="blue", outline="")
-            tiledCanv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1] + tileDims[1-tile[3]]) *50 - 2, (tile[0]+1)*50 - 2, 
+                                  fill="blue", outline="")
+            canv.create_rectangle(tile[1]*50 + 10, tile[0]*50 + 10, 
+                                  (tile[1]+1)*50 -2, (tile[0] + tileDims[tile[3]])*50 - 2, 
+                                  fill="blue", outline="")
 
+# Build GUI window
+window = tkr.Tk()
+window.title("Matrix Tilizationator")
+window.geometry("1000x800")
+matrixLbl = tkr.Label(window,text="Type a binary matrix below as a python list of lists, e.g. [[0 0], [0,0], [0,0]]", font=("Comic Sans MS",14))
+matrixLbl.pack()
+matrixTxt = tkr.Entry(window,width=10)
+matrixTxt.pack()
 
-tileButton = tkr.Button(window, text="Tile", command = inputParameters)
+tileLbl = tkr.Label(window,text="Type a pair of tile dimensions below as a python tuple of integers, e.g. (2,2)", font=("Comic Sans MS",14))
+tileLbl.pack()
+tileTxt = tkr.Entry(window,width=10)
+tileTxt.pack()
+
+tileButton = tkr.Button(window, text="Tile", command = buttonPressed)
 tileButton.pack()
 
 window.mainloop()
